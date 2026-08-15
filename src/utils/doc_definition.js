@@ -109,34 +109,54 @@ export function buildDocDefinition(data, assetsDir) {
     }
   }
 
-  // ---- Header completo (solo página 1, como primer elemento del content) ----
+  // ---- Header completo (solo página 1) ----
+  // Logo a la izquierda, datos de empresa centrados en la página, datos factura a la derecha
+  const pageWidth = 595.28 - 80; // A4 width minus margins (40+40)
+  const logoW = 80;
+  const invoiceW = 150;
+  const centerW = pageWidth - logoW - invoiceW;
+
   const fullHeader = {
-    columns: [
-      logoDataUri
-        ? { image: logoDataUri, width: 80, fit: [80, 90], margin: [0, 0, 10, 0] }
-        : { text: '', width: 80 },
-      {
-        stack: [
-          { text: `${company.name || ''} Co.`, style: 'companyName' },
-          { text: `Tel. +${company.phone || ''}`, style: 'companyDetail' },
-          { text: `NIT. ${company.tax_id || ''}`, style: 'companyDetail' },
-          { text: company.city || '', style: 'companyDetail' },
-          { text: company.website || '', style: 'companyDetail' },
+    table: {
+      widths: [logoW, centerW, invoiceW],
+      body: [
+        [
+          logoDataUri
+            ? { image: logoDataUri, width: logoW - 10, fit: [logoW - 10, 90], margin: [0, 0, 5, 0], border: [false, false, false, false] }
+            : { text: '', border: [false, false, false, false] },
+          {
+            stack: [
+              { text: `${company.name || ''}`, style: 'companyName' },
+              { text: company.slogan || '', style: 'companySlogan', margin: [0, 0, 0, 4] },
+              { text: `Tel. +${company.phone || ''}`, style: 'companyDetail' },
+              { text: `NIT. ${company.tax_id || ''}`, style: 'companyDetail' },
+              { text: company.city || '', style: 'companyDetail' },
+              { text: company.website || '', style: 'companyDetail' },
+            ],
+            alignment: 'center',
+            border: [false, false, false, false],
+          },
+          {
+            stack: [
+              { text: invoice.type || '', style: 'invoiceTypeTitle' },
+              { text: `NRO. ${invoice.number || ''}`, style: 'invoiceNumber' },
+            ],
+            alignment: 'center',
+            style: 'quotationBox',
+            margin: [10, 8, 10, 8],
+            border: [false, false, false, false],
+          },
         ],
-        width: '*',
-        alignment: 'center',
-      },
-      {
-        stack: [
-          { text: invoice.type || '', style: 'invoiceTypeTitle' },
-          { text: `NRO. ${invoice.number || ''}`, style: 'invoiceNumber' },
-        ],
-        width: 150,
-        alignment: 'center',
-        style: 'quotationBox',
-        margin: [10, 8, 10, 8],
-      },
-    ],
+      ],
+    },
+    layout: {
+      hLineWidth: () => 0,
+      vLineWidth: () => 0,
+      paddingLeft: () => 0,
+      paddingRight: () => 0,
+      paddingTop: () => 0,
+      paddingBottom: () => 0,
+    },
     margin: [0, 0, 0, 15],
   };
 
@@ -423,6 +443,7 @@ export function buildDocDefinition(data, assetsDir) {
     },
     styles: {
       companyName: { fontSize: 18, bold: true, alignment: 'center', font: 'DanhDa' },
+      companySlogan: { fontSize: 10, italics: true, color: '#888888', alignment: 'center' },
       companyDetail: { fontSize: 10, color: '#555555', alignment: 'center', margin: [0, 1, 0, 1] },
       invoiceTypeTitle: { fontSize: 15, bold: true, alignment: 'center' },
       invoiceNumber: { fontSize: 13, bold: true, alignment: 'center' },
