@@ -51,6 +51,7 @@ sequenceDiagram
 - **Cálculos Automáticos:** Subtotales, IVA (porcentaje o absoluto), descuentos.
 - **Total en Letras:** Conversión automática a texto en español.
 - **Logo Incrustado:** Imágenes embebidas en base64, PDF autocontenido.
+- **Multi-página:** La tabla de items fluye entre páginas sin header repetido; el footer lleva número de página en todas y el logo pequeño en la última.
 - **API Segura:** Auth por API Key + rate limiting.
 - **Validación:** Esquemas Joi para datos de entrada.
 - **Docker:** Imagen base `node:20-alpine` (~50MB vs ~800MB antes).
@@ -71,17 +72,22 @@ invoice_html_project/
 ├── generate.js                   # Script CLI
 ├── src/
 │   ├── api/server.js             # Servidor Express (API REST)
-│   ├── assets/                   # Logos y fuentes
+│   ├── assets/
+│   │   ├── fonts/                # DanhDa-Bold (título) + Montserrat (cuerpo)
+│   │   └── *.png                 # Logos
 │   ├── data/
 │   │   ├── company.json          # Datos de la empresa
-│   │   └── invoice.json          # Ejemplo de factura
-│   ├── output/                   # PDFs generados
-│   ├── templates/                # (legacy, pendiente eliminación)
+│   │   ├── invoice.json          # Ejemplo de factura corta
+│   │   └── factura-large.json    # Ejemplo de factura larga (multi-página)
+│   ├── output/                   # PDFs generados (gitignored)
 │   └── utils/
-│       ├── doc_definition.js     # Builder pdfmake
+│       ├── doc_definition.js     # Builder de docDefinition para pdfmake
 │       ├── invoice_schema.js     # Validación Joi
-│       └── invoice_utils.js      # Lógica de negocio
-├── tests/                        # Tests uvu
+│       └── invoice_utils.js      # Lógica de negocio (totales, nº a texto)
+├── tests/                        # Tests uvu (39 en total)
+│   ├── api-invoice.test.js       # Integración API (requiere servidor)
+│   ├── unit-doc_definition.test.js
+│   └── unit-invoice_utils.test.js
 ├── Dockerfile
 └── package.json
 ```
@@ -106,6 +112,9 @@ pnpm run generate
 
 # Generar con archivos personalizados
 node generate.js --data mi-factura.json --output mi-factura.pdf
+
+# Ejemplo de factura larga (multi-página)
+node generate.js --data src/data/factura-large.json --output factura-larga.pdf
 ```
 
 ---
@@ -119,7 +128,7 @@ pnpm run api
 ### Endpoint
 
 - **POST** `/generate-invoice`
-- **Headers:** `Content-Type: application/json`, `x-api-key: supersecretkey`
+- **Headers:** `Content-Type: application/json`, `x-api-key: <tu-api-key>`
 - **Body:** JSON de la factura (ver `src/data/invoice.json` como ejemplo)
 - **Respuesta:** PDF (`application/pdf`)
 
@@ -131,25 +140,30 @@ curl -X POST http://localhost:3000/generate-invoice \
   --output factura.pdf
 ```
 
+La API Key por defecto es `supersecretkey` (configurable con `API_KEY`). Rate limit: 30 peticiones cada 15 minutos por IP.
+
 ---
 
 ## Personalización
 
 - **Logo:** Cambia archivos en `src/assets/` y actualiza `company.json`.
-- **Fuente:** Coloca cualquier `.ttf` en `src/assets/fonts/` y registra en `doc_definition.js`.
+- **Fuente:** Coloca cualquier `.ttf` en `src/assets/fonts/` y registra en `doc_definition.js` (sección `setupFonts`).
 - **Empresa:** Modifica `src/data/company.json`.
-- **Estilos:** Edita los estilos en `doc_definition.js` (objeto `styles` y layouts de tabla).
+- **Estilos:** Edita el objeto `styles` y los layouts de tabla en `doc_definition.js`.
 
 ---
 
 ## Tests
 
 ```bash
-# Terminal 1: iniciar API
+# Terminal 1: iniciar API (requerido solo para tests de integración)
 pnpm run api
 
-# Terminal 2: ejecutar tests
+# Terminal 2: ejecutar todos los tests (39)
 pnpm run test
+
+# Solo unit tests (sin servidor)
+npx uvu tests "unit-"
 ```
 
 ---
