@@ -12,106 +12,140 @@
 // CÁLCULO DE TOTALES DE FACTURA
 // -----------------------------
 /**
- * Calcula los totales de la factura a partir de los items y los campos opcionales de IVA y descuento.
- * Permite que IVA y descuento sean porcentajes (ej: 19, "19%") o valores absolutos.
+ * Calcula los totales de la factura a partir de los items, impuestos y descuentos.
  *
- * @param {Object} data - Objeto de datos de la factura (company, client, items, iva, descuento, etc.)
- * @returns {Object} - Objeto con los campos calculados: items (con subtotal), totals: {subtotal, iva, descuento, total_numeric, total_text}
+ * Estructura nueva (recomendada):
+ *   taxes: [{ name: "IVA", rate: 19 }, { name: "ICA", rate: 0.7 }]
+ *   discount: { global_rate: 5 }  o  { global_amount: 50000 }
+ *   items[].taxable: true/false (default true)
+ *   items[].discount_rate: 10  (descuento individual por item)
+ *
+ * Estructura legacy (sigue funcionando):
+ *   iva: 19  /  descuento: 5
+ *
+ * @param {Object} data - Datos de la factura
+ * @returns {Object} - Datos con totals calculados
  */
 function calcularTotales(data) {
-  // Copia profunda para no mutar el original
   const factura = JSON.parse(JSON.stringify(data));
 
-  // Permitir que iva y descuento estén en la raíz o en invoice
-  // Prioridad: raíz > invoice
-  let ivaRaw = factura.iva;
-  let descuentoRaw = factura.descuento;
-  if (typeof ivaRaw === 'undefined' && factura.invoice && typeof factura.invoice.iva !== 'undefined') {
-    ivaRaw = factura.invoice.iva;
-  }
-  if (typeof descuentoRaw === 'undefined' && factura.invoice && typeof factura.invoice.descuento !== 'undefined') {
-    descuentoRaw = factura.invoice.descuento;
-  }
-
-  // Calcular subtotal y total de cada item
+  // ── Subtotal por item ──
   factura.items = factura.items.map(item => {
-    const subtotal = Number(item.quantity) * Number(item.unit_price);
-    return { ...item, subtotal };
+    const lineTotal = Number(item.quantity) * Number(item.unit_price);
+
+    // Descuento por item
+    let itemDiscount = 0;
+    if (item.discount_rate != null && item.discount_rate !== '') {
+      const rate = Number(item.discount_rate);
+      if (rate > 0 && rate <= 100) {
+        itemDiscount = lineTotal * (rate / 100);
+      } else if (rate > 100) {
+        itemDiscount = rate; // valor absoluto
+      }
+    }
+
+    const subtotal = lineTotal - itemDiscount;
+    return { ...item, subtotal, item_discount: itemDiscount };
   });
-  // Subtotal general
+
   const subtotal = factura.items.reduce((acc, item) => acc + item.subtotal, 0);
 
-  // === IVA ===
-  // Puede ser porcentaje (ej: 19, "19%") o valor absoluto
-  let iva = 0;
-  if (typeof ivaRaw !== 'undefined' && ivaRaw !== null && ivaRaw !== '') {
-    if (typeof ivaRaw === 'number') {
-      // Si es número entero y <=100, se interpreta como porcentaje
-      if (ivaRaw > 0 && ivaRaw <= 100) {
-        iva = subtotal * (ivaRaw / 100);
-      } else {
-        iva = ivaRaw; // valor absoluto
-      }
-    } else if (typeof ivaRaw === 'string') {
-      if (ivaRaw.endsWith('%')) {
-        iva = subtotal * (parseFloat(ivaRaw) / 100);
-      } else if (!isNaN(Number(ivaRaw))) {
-        // Si es string numérico, se interpreta como porcentaje
-        const num = Number(ivaRaw);
-        if (num > 0 && num <= 100) {
-          iva = subtotal * (num / 100);
-        } else {
-          iva = num; // valor absoluto
-        }
-      } else {
-        iva = 0;
-      }
+  // ── Impuestos ──
+  // Soporte nuevo: taxes[] array
+  // Soporte legacy: data.iva o data.invoice.iva
+  let taxes = [];
+
+  if (Array.isArray(factura.taxes) && factura.taxes.length > 0) {
+    // Estructura nueva
+    taxes = factura.taxes.map(t => {
+      const rate = Number(t.rate) || 0;
+      const amount = Math.round(subtotal * (rate / 100));
+      return { name: t.name, rate, amount };
+    });
+  } else {
+    // Legacy: campo iva
+    let ivaRaw = factura.iva;
+    if (typeof ivaRaw === 'undefined' && factura.invoice && typeof factura.invoice.iva !== 'undefined') {
+      ivaRaw = factura.invoice.iva;
+    }
+    const ivaParsed = parseRateOrAmount(ivaRaw, subtotal);
+    if (ivaParsed > 0) {
+      taxes = [{ name: 'IVA', rate: typeof ivaRaw === 'number' && ivaRaw <= 100 ? ivaRaw : 0, amount: ivaParsed }];
     }
   }
 
-  // === Descuento ===
-  // Puede ser porcentaje (ej: 10, "10%") o valor absoluto
-  let descuento = 0;
-  if (typeof descuentoRaw !== 'undefined' && descuentoRaw !== null && descuentoRaw !== '') {
-    if (typeof descuentoRaw === 'number') {
-      // Si es número entero y <=100, se interpreta como porcentaje
-      if (descuentoRaw > 0 && descuentoRaw <= 100) {
-        descuento = subtotal * (descuentoRaw / 100);
-      } else {
-        descuento = descuentoRaw; // valor absoluto
-      }
-    } else if (typeof descuentoRaw === 'string') {
-      if (descuentoRaw.endsWith('%')) {
-        descuento = subtotal * (parseFloat(descuentoRaw) / 100);
-      } else if (!isNaN(Number(descuentoRaw))) {
-        // Si es string numérico, se interpreta como porcentaje
-        const num = Number(descuentoRaw);
-        if (num > 0 && num <= 100) {
-          descuento = subtotal * (num / 100);
-        } else {
-          descuento = num; // valor absoluto
-        }
-      } else {
-        descuento = 0;
-      }
+  const totalTaxes = taxes.reduce((acc, t) => acc + t.amount, 0);
+
+  // ── Descuento global ──
+  // Nuevo: discount.global_rate o discount.global_amount
+  // Legacy: data.descuento o data.invoice.descuento
+  let descuentoGlobal = 0;
+  let globalDiscountRate = 0;
+
+  if (factura.discount && typeof factura.discount === 'object') {
+    if (factura.discount.global_rate != null) {
+      globalDiscountRate = Number(factura.discount.global_rate);
+      descuentoGlobal = subtotal * (globalDiscountRate / 100);
+    } else if (factura.discount.global_amount != null) {
+      descuentoGlobal = Number(factura.discount.global_amount);
+    }
+  } else {
+    // Legacy
+    let descRaw = factura.descuento;
+    if (typeof descRaw === 'undefined' && factura.invoice && typeof factura.invoice.descuento !== 'undefined') {
+      descRaw = factura.invoice.descuento;
+    }
+    descuentoGlobal = parseRateOrAmount(descRaw, subtotal);
+    if (descRaw != null && descRaw !== '') {
+      const num = Number(String(descRaw).replace('%', ''));
+      if (num > 0 && num <= 100) globalDiscountRate = num;
     }
   }
 
-  // Total numérico
-  const total_numeric = subtotal + iva - descuento;
-  // Total en texto (en letras)
+  // ── Descuento por item (ya aplicado, solo para totales) ──
+  const itemDiscounts = factura.items.reduce((acc, item) => acc + (item.item_discount || 0), 0);
+
+  // ── Total ──
+  const total_numeric = subtotal + totalTaxes - descuentoGlobal;
   const total_text = numeroATexto(total_numeric);
+
   return {
     ...factura,
     items: factura.items,
     totals: {
       subtotal,
-      iva,
-      descuento,
+      taxes,            // [{ name, rate, amount }]
+      total_taxes: totalTaxes,
+      descuento_global: descuentoGlobal,
+      global_discount_rate: globalDiscountRate,
+      descuento_items: itemDiscounts,
+      // Legacy compat
+      descuento: descuentoGlobal + itemDiscounts,
+      iva: taxes.find(t => t.name === 'IVA')?.amount || 0,
       total_numeric,
       total_text
     }
   };
+}
+
+/**
+ * Parsea un valor que puede ser porcentaje o monto absoluto.
+ * - Número ≤ 100 → porcentaje del subtotal
+ * - Número > 100 → valor absoluto
+ * - String "19%" → porcentaje
+ * - String numérico → porcentaje si ≤ 100, absoluto si > 100
+ */
+function parseRateOrAmount(raw, base) {
+  if (raw == null || raw === '') return 0;
+  if (typeof raw === 'number') {
+    return raw > 0 && raw <= 100 ? base * (raw / 100) : raw;
+  }
+  if (typeof raw === 'string') {
+    if (raw.endsWith('%')) return base * (parseFloat(raw) / 100);
+    const num = Number(raw);
+    if (!isNaN(num)) return num > 0 && num <= 100 ? base * (num / 100) : num;
+  }
+  return 0;
 }
 
 // -----------------------------
@@ -195,7 +229,9 @@ function adaptInvoiceData(data) {
     name: item.name || item.description || '',
     details: item.details || [],
     quantity: item.quantity || 0,
-    unit_price: item.unit_price || item.price || 0
+    unit_price: item.unit_price || item.price || 0,
+    taxable: item.taxable !== undefined ? item.taxable : true,
+    discount_rate: item.discount_rate || 0
   }));
   // Construir objeto adaptado
   return {
@@ -203,6 +239,10 @@ function adaptInvoiceData(data) {
     client: { ...defaultClient, ...(data.client || {}) },
     invoice: { ...defaultInvoice, ...(data.invoice || {}) },
     items: adaptItems(data.items),
+    // Nuevo: taxes[] y discount{}
+    taxes: data.taxes || [],
+    discount: data.discount || null,
+    // Legacy compat
     iva: data.iva || (data.invoice && data.invoice.iva) || '',
     descuento: data.descuento || (data.invoice && data.invoice.descuento) || '',
     observations: data.observations || []

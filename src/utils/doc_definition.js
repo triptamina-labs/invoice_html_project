@@ -255,16 +255,41 @@ export function buildDocDefinition(data, assetsDir) {
     { text: 'Subtotal:', bold: true, width: '*' },
     { text: formatCurrency(totals.subtotal), alignment: 'right', width: 120 },
   ]);
-  if (totals.iva > 0) {
+
+  // Descuento por items (si hay)
+  if (totals.descuento_items > 0) {
+    totalsBody.push([
+      { text: 'Desc. items:', bold: false, color: '#888', width: '*' },
+      { text: `- ${formatCurrency(totals.descuento_items)}`, alignment: 'right', width: 120, color: '#888' },
+    ]);
+  }
+
+  // Impuestos (nuevo: taxes[] / legacy: iva)
+  if (totals.taxes && totals.taxes.length > 0) {
+    totals.taxes.forEach(t => {
+      if (t.amount > 0) {
+        totalsBody.push([
+          { text: `${t.name} (${t.rate}%):`, bold: true, width: '*' },
+          { text: formatCurrency(t.amount), alignment: 'right', width: 120 },
+        ]);
+      }
+    });
+  } else if (totals.iva > 0) {
+    // Legacy fallback
     totalsBody.push([
       { text: 'IVA:', bold: true, width: '*' },
       { text: formatCurrency(totals.iva), alignment: 'right', width: 120 },
     ]);
   }
-  if (totals.descuento > 0) {
+
+  // Descuento global
+  if (totals.descuento_global > 0) {
+    const label = totals.global_discount_rate > 0
+      ? `Descuento (${totals.global_discount_rate}%):`
+      : 'Descuento:';
     totalsBody.push([
-      { text: 'Descuento:', bold: true, width: '*' },
-      { text: formatCurrency(totals.descuento), alignment: 'right', width: 120 },
+      { text: label, bold: true, width: '*' },
+      { text: `- ${formatCurrency(totals.descuento_global)}`, alignment: 'right', width: 120 },
     ]);
   }
 

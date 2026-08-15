@@ -165,4 +165,117 @@ test('calcularTotales: no muta el original', () => {
   assert.is(JSON.stringify(orig), snap);
 });
 
+// =============================
+// calcularTotales — nueva estructura taxes[]
+// =============================
+
+test('calcularTotales: taxes[] array con IVA 19%', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    taxes: [{ name: 'IVA', rate: 19 }],
+  }));
+  assert.is(r.totals.taxes.length, 1);
+  assert.is(r.totals.taxes[0].name, 'IVA');
+  assert.is(r.totals.taxes[0].amount, 19000);
+  assert.is(r.totals.total_taxes, 19000);
+  assert.is(r.totals.total_numeric, 119000);
+});
+
+test('calcularTotales: taxes[] con múltiples impuestos', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    taxes: [
+      { name: 'IVA', rate: 19 },
+      { name: 'ICA', rate: 0.7 },
+    ],
+  }));
+  assert.is(r.totals.taxes.length, 2);
+  assert.is(r.totals.taxes[0].name, 'IVA');
+  assert.is(r.totals.taxes[0].amount, 19000);
+  assert.is(r.totals.taxes[1].name, 'ICA');
+  assert.is(r.totals.taxes[1].amount, 700);
+  assert.is(r.totals.total_taxes, 19700);
+  assert.is(r.totals.total_numeric, 119700);
+});
+
+test('calcularTotales: taxes[] tiene prioridad sobre iva legacy', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    taxes: [{ name: 'IVA', rate: 5 }],
+    iva: 19, // ignorado porque taxes[] existe
+  }));
+  assert.is(r.totals.taxes[0].amount, 5000);
+  assert.is(r.totals.total_numeric, 105000);
+});
+
+test('calcularTotales: descuento global por rate', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    discount: { global_rate: 10 },
+  }));
+  assert.is(r.totals.descuento_global, 10000);
+  assert.is(r.totals.global_discount_rate, 10);
+  assert.is(r.totals.total_numeric, 90000);
+});
+
+test('calcularTotales: descuento global por amount', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    discount: { global_amount: 15000 },
+  }));
+  assert.is(r.totals.descuento_global, 15000);
+  assert.is(r.totals.total_numeric, 85000);
+});
+
+test('calcularTotales: descuento por item', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [
+      { code: 'A', name: 'A', quantity: 2, unit_price: 50000, discount_rate: 10 },
+      { code: 'B', name: 'B', quantity: 1, unit_price: 30000 },
+    ],
+  }));
+  // Item A: 2*50000=100000, desc 10%=10000, subtotal=90000
+  // Item B: 1*30000=30000, sin desc, subtotal=30000
+  assert.is(r.items[0].item_discount, 10000);
+  assert.is(r.items[0].subtotal, 90000);
+  assert.is(r.items[1].item_discount, 0);
+  assert.is(r.items[1].subtotal, 30000);
+  assert.is(r.totals.subtotal, 120000);
+  assert.is(r.totals.descuento_items, 10000);
+});
+
+test('calcularTotales: descuento global + por item + taxes combinados', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [
+      { code: 'A', name: 'A', quantity: 1, unit_price: 100000, discount_rate: 10 },
+    ],
+    taxes: [{ name: 'IVA', rate: 19 }],
+    discount: { global_rate: 5 },
+  }));
+  // Item: 100000 - 10% = 90000
+  // Subtotal: 90000
+  // IVA: 90000 * 19% = 17100
+  // Desc global: 90000 * 5% = 4500
+  // Total: 90000 + 17100 - 4500 = 102600
+  assert.is(r.items[0].subtotal, 90000);
+  assert.is(r.totals.subtotal, 90000);
+  assert.is(r.totals.taxes[0].amount, 17100);
+  assert.is(r.totals.descuento_global, 4500);
+  assert.is(r.totals.total_numeric, 102600);
+});
+
+test('calcularTotales: item con taxable=false no afecta cálculo (impuestos van al subtotal)', () => {
+  // Nota: taxable es un flag informativo por ahora, los impuestos se calculan
+  // sobre el subtotal de TODOS los items. El campo existe para futura extensión.
+  const r = calcularTotales(adaptInvoiceData({
+    items: [
+      { code: 'A', name: 'A', quantity: 1, unit_price: 100000, taxable: false },
+    ],
+    taxes: [{ name: 'IVA', rate: 19 }],
+  }));
+  // Por ahora taxable no filtra — el IVA se calcula sobre todo el subtotal
+  assert.is(r.items[0].taxable, false);
+  assert.is(r.totals.subtotal, 100000);
+});
+
 test.run();
