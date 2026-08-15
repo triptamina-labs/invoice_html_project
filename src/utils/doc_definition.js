@@ -85,7 +85,17 @@ function formatCurrency(value) {
 export function buildDocDefinition(data, assetsDir) {
   setupFonts();
 
-  const { company, client, invoice, items, totals, observations } = data;
+  // Si no viene company en los datos, intentar cargar company.json
+  let { company } = data;
+  if (!company || !company.name) {
+    const companyPath = path.join(assetsDir, '../data/company.json');
+    if (fs.existsSync(companyPath)) {
+      company = JSON.parse(fs.readFileSync(companyPath, 'utf8'));
+    }
+  }
+  company = company || {};
+
+  const { client, invoice, items, totals, observations } = data;
 
   // ---- Logos ----
   let logoDataUri = null;
