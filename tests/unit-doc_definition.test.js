@@ -86,34 +86,30 @@ test('buildDocDefinition: totales reflejan IVA y descuento', () => {
     descuento: 10,
   });
   const doc = buildDocDefinition(data, assetsDir);
-  // La columna de totales es la última del column layout (obs + línea + totales)
-  const colLayout = doc.content.find(c =>
-    c.columns && c.columns.some(col =>
-      col.stack && col.stack.length >= 3
-    )
+  // La tabla de obs+totales es la última en content; totales están en la celda derecha
+  const obsTotalsTable = doc.content.find(c =>
+    c.table && c.table.body && c.table.body[0] &&
+    c.table.body[0].some(cell => cell.stack && cell.stack.some(item => item.text === 'Observaciones:'))
   );
-  assert.ok(colLayout, 'Column layout con totales existe');
-  const totalsCol = colLayout.columns[colLayout.columns.length - 1];
-  assert.ok(totalsCol.stack, 'Columna de totales tiene stack');
-  assert.ok(totalsCol.stack.length >= 2, 'Totales tiene subtotal/IVA/desc + total box');
+  assert.ok(obsTotalsTable, 'Tabla con observaciones y totales existe');
+  const totalsCell = obsTotalsTable.table.body[0][1];
+  assert.ok(totalsCell.stack, 'Celda de totales tiene stack');
+  assert.ok(totalsCell.stack.length >= 2, 'Totales tiene subtotal/IVA/desc + total box');
 });
 
 test('buildDocDefinition: observaciones aparecen en el doc', () => {
   const data = fakeData({ observations: ['Obs 1', 'Obs 2'] });
   const doc = buildDocDefinition(data, assetsDir);
-  // Buscar el column layout que contiene "Observaciones:" en alguna columna
-  const colLayout = doc.content.find(c =>
-    c.columns && c.columns.some(col =>
-      col.stack && col.stack.some(item => item.text === 'Observaciones:')
-    )
+  // Buscar la tabla que contiene "Observaciones:" en la celda izquierda
+  const obsTotalsTable = doc.content.find(c =>
+    c.table && c.table.body && c.table.body[0] &&
+    c.table.body[0].some(cell => cell.stack && cell.stack.some(item => item.text === 'Observaciones:'))
   );
-  assert.ok(colLayout, 'Column layout con observaciones existe');
-  const obsCol = colLayout.columns.find(col =>
-    col.stack && col.stack.some(item => item.text === 'Observaciones:')
-  );
-  const obsHeader = obsCol.stack.find(c => c.text === 'Observaciones:');
+  assert.ok(obsTotalsTable, 'Tabla con observaciones existe');
+  const obsCell = obsTotalsTable.table.body[0][0];
+  const obsHeader = obsCell.stack.find(c => c.text === 'Observaciones:');
   assert.ok(obsHeader, 'Header "Observaciones:" existe');
-  const obsItems = obsCol.stack.filter(c => c.text && c.text.startsWith('- Obs'));
+  const obsItems = obsCell.stack.filter(c => c.text && c.text.startsWith('- Obs'));
   assert.is(obsItems.length, 2, '2 items de observaciones');
 });
 

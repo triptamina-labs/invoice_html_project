@@ -354,18 +354,40 @@ export function buildDocDefinition(data, assetsDir) {
       infoTable,
       itemsTable,
       {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: 'Observaciones:', bold: true, fontSize: 11, margin: [0, 0, 0, 3] },
-              ...(observations || []).map(obs => ({ text: `- ${obs}`, fontSize: 9, color: '#777777', margin: [0, 1, 0, 1] })),
+        table: {
+          widths: ['*', 280],
+          body: [
+            [
+              {
+                stack: [
+                  { text: 'Observaciones:', bold: true, fontSize: 11, margin: [0, 0, 0, 3] },
+                  ...(observations || []).map(obs => ({ text: `- ${obs}`, fontSize: 9, color: '#777777', margin: [0, 1, 0, 1] })),
+                ],
+                border: [false, false, true, false],
+                borderColor: ['#cccccc', '#cccccc', '#cccccc', '#cccccc'],
+                margin: [0, 0, 10, 0],
+              },
+              {
+                stack: [totalsTable, totalBox, totalText],
+                border: [false, false, false, false],
+                margin: [10, 0, 0, 0],
+              },
             ],
+          ],
+        },
+        layout: {
+          hLineWidth: () => 0,
+          vLineWidth: (i, node) => {
+            // Solo dibujar borde derecho de la celda izquierda (índice 1 entre 2 cols)
+            if (i === 1) return 0.5;
+            return 0;
           },
-          { width: 1, canvas: [{ type: 'line', x1: 0, y1: 0, x2: 0, y2: 200, lineWidth: 0.5, lineColor: '#cccccc' }], margin: [10, 0, 10, 0] },
-          { width: 280, stack: [totalsTable, totalBox, totalText] },
-        ],
-        columnGap: 0,
+          vLineColor: () => '#cccccc',
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
+        },
         margin: [0, 0, 0, 10],
       },
     ],
