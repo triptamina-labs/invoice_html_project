@@ -137,7 +137,7 @@ export function buildDocDefinition(data, assetsDir) {
           {
             stack: [
               { text: `${company.name || ''}`, style: 'companyName' },
-              { text: company.slogan || '', style: 'companySlogan', margin: [0, 0, 0, 4] },
+              ...(company.slogan ? [{ text: company.slogan, style: 'companySlogan', margin: [0, 0, 0, 4] }] : []),
               { text: `Tel. +${company.phone || ''}`, style: 'companyDetail' },
               { text: `NIT. ${company.tax_id || ''}`, style: 'companyDetail' },
               { text: company.city || '', style: 'companyDetail' },
