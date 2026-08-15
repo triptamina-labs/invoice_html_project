@@ -11,7 +11,7 @@
 // -----------------------------
 // IMPORTACIÓN DE DEPENDENCIAS
 // -----------------------------
-const Joi = require('joi'); // Librería de validación de esquemas
+import Joi from 'joi'; // Librería de validación de esquemas
 
 // -----------------------------
 // ESQUEMA PERSONALIZADO PARA CAMPOS NUMÉRICOS O PORCENTAJE
@@ -100,4 +100,4 @@ const validateInvoice = (req, res, next) => {
 // -----------------------------
 // EXPORTACIÓN DEL MIDDLEWARE
 // -----------------------------
-module.exports = { validateInvoice };
+export { validateInvoice };

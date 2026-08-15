@@ -212,8 +212,4 @@ function adaptInvoiceData(data) {
 // -----------------------------
 // EXPORTACIÓN DE FUNCIONES
 // -----------------------------
-module.exports = {
-  calcularTotales,
-  numeroATexto,
-  adaptInvoiceData
-}; 
+export { calcularTotales, numeroATexto, adaptInvoiceData }; 

@@ -5,20 +5,14 @@ node_modules/
 logs/
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # OS
 .DS_Store
 Thumbs.db
 
-# PDF y archivos generados
-invoice.pdf
-font_test.pdf
-
-# Puppeteer Chromium cache
-.chromium/
-puppeteer_cache/
+# PDF generados
+src/output/*.pdf
+src/output/*.html
 
 # Entornos
 .env
@@ -27,6 +21,5 @@ puppeteer_cache/
 # Otros
 *.swp
 .idea/
-.vscode/ 
-
+.vscode/
 .cursor

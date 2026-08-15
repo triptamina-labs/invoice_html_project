@@ -1,0 +1,141 @@
+{
+  "client": {
+    "name": "Ingeniería y Soluciones Industriales S.A.S.",
+    "nit": "900876543-2",
+    "code": "ISI-0247"
+  },
+  "invoice": {
+    "type": "Cotización",
+    "number": "589",
+    "place": "Tunja, Boyacá",
+    "date": "14 de Agosto 2026",
+    "expiry_date": "14 de Septiembre 2026",
+    "seller": "Felipe Castellanos",
+    "conditions": "Transferencia bancaria — 30% anticipo, 70% contra entrega",
+    "reference": "Proyecto laboratorio QC",
+    "delivery": "Envío terrestre a Bogotá (3-5 días hábiles)",
+    "iva": "19",
+    "descuento": "5"
+  },
+  "items": [
+    {
+      "code": "TL-INS-E-2-C",
+      "name": "Empaque Unión VITON 6\"",
+      "details": ["Material: VITON (FKM)", "Diámetro: 6\"", "Rango temperatura: -26 °C a +222 °C", "Norma: ASTM D2000"],
+      "quantity": 4,
+      "unit_price": 570000
+    },
+    {
+      "code": "TL-INS-E-2",
+      "name": "Empaque Unión VITON 1.5\"",
+      "details": ["Material: VITON (FKM)", "Diámetro: 1.5\"", "Rango temperatura: -26 °C a +222 °C"],
+      "quantity": 12,
+      "unit_price": 105000
+    },
+    {
+      "code": "TL-INS-E-2-A",
+      "name": "Empaque Unión VITON 3\"",
+      "details": ["Material: VITON (FKM)", "Diámetro: 3\"", "Rango temperatura: -26 °C a +222 °C"],
+      "quantity": 6,
+      "unit_price": 210000
+    },
+    {
+      "code": "TL-INS-P-1",
+      "name": "Columna de Extracción LLE 2L",
+      "details": ["Capacidad: 2 litros", "Material: Acero inoxidable 316L", "Extractor: Soxhlet modificado", "Incluye banner y control PID"],
+      "quantity": 1,
+      "unit_price": 18500000
+    },
+    {
+      "code": "TL-INS-P-2",
+      "name": "Columna de Extracción LLE 5L",
+      "details": ["Capacidad: 5 litros", "Material: Acero inoxidable 316L", "Extractor: Soxhlet modificado", "Incluye banner y control PID", "Certificado de calibración incluido"],
+      "quantity": 1,
+      "unit_price": 28000000
+    },
+    {
+      "code": "TL-HOR-V-1",
+      "name": "Horno de Vacío 100L",
+      "details": ["Capacidad: 100 litros", "Rango: RT a 300 °C", "Vacío: hasta 10⁻² mbar", "Controlador: PID 2.0 + LVGL", "Pantalla: GT911 táctil 7\"", "Ch422G multiplexor LED"],
+      "quantity": 1,
+      "unit_price": 45000000
+    },
+    {
+      "code": "TL-HOR-V-2",
+      "name": "Horno de Vacío 200L",
+      "details": ["Capacidad: 200 litros", "Rango: RT a 300 °C", "Vacío: hasta 10⁻² mbar", "Controlador: PID 2.0 + LVGL", "Puerta con visor de cristal"],
+      "quantity": 1,
+      "unit_price": 62000000
+    },
+    {
+      "code": "TL-CAB-FL-1",
+      "name": "Cabina de Flujo Laminar CLS-4",
+      "details": ["Clase: ISO 5 (Class 100)", "Dimensiones: 1200×600×600 mm", "Filtro HEPA H14 al 99.995%", "Flujo unidireccional", "Panel de control digital"],
+      "quantity": 1,
+      "unit_price": 32000000
+    },
+    {
+      "code": "TL-INS-S-1",
+      "name": "Sistema de Homogeneización SFE",
+      "details": ["Extractor: fluido supercrítico CO₂", "Presión: hasta 400 bar", "Temperatura: hasta 80 °C", "Recámara: 500 mL", "Incluye bomba de alta presión"],
+      "quantity": 1,
+      "unit_price": 78000000
+    },
+    {
+      "code": "TL-INS-E-3",
+      "name": "Válvula Esférica Acero 316L 2\"",
+      "details": ["Material: Acero inoxidable 316L", "Diámetro nominal: 2\"", "Tipo: esférica full-bore", "Presión: hasta 2000 WOG", "Conexión: brida ANSI 150"],
+      "quantity": 3,
+      "unit_price": 890000
+    },
+    {
+      "code": "TL-INS-E-4",
+      "name": "Sensor de Temperatura PT100",
+      "details": ["Tipo: PT100 Clase A", "Rango: -200 °C a +600 °C", "Conexión: M12 4-pines", "Probe: 150 mm × 6 mm", "Certificado de calibración"],
+      "quantity": 8,
+      "unit_price": 125000
+    },
+    {
+      "code": "TL-INS-E-5",
+      "name": "Manguera Teflón Reforzada 3/4\"",
+      "details": ["Material: PTFE reforzado con acero inoxidable", "Diámetro interno: 3/4\"", "Presión: hasta 150 PSI", "Temperatura: -70 °C a +260 °C"],
+      "quantity": 10,
+      "unit_price": 95000
+    },
+    {
+      "code": "TL-INS-E-6",
+      "name": "Conector Tri Clamp 2\"",
+      "details": ["Material: Acero inoxidable 316L", "Tamaño: 2\" Tri-Clamp", "Junta: silicona alimentaria", "Estándar: DIN 32676"],
+      "quantity": 20,
+      "unit_price": 35000
+    },
+    {
+      "code": "TL-INS-E-7",
+      "name": "Reactor Batch 50L Jacketed",
+      "details": ["Capacidad: 50 litros", "Material: Acero inoxidable 316L", "Chaqueta para fluido térmico", "Mezclador: aspas pivotantes", "Puertas de carga superior e inferior"],
+      "quantity": 1,
+      "unit_price": 35000000
+    },
+    {
+      "code": "TL-INS-E-8",
+      "name": "Centrífuga Industrial 15L",
+      "details": ["Capacidad: 15 litros", "Velocidad: hasta 8000 RPM", "Motor: trifásico 2HP", "Control: PID con pantalla táctil", "Cesta: acero inoxidable perforado"],
+      "quantity": 1,
+      "unit_price": 22000000
+    },
+    {
+      "code": "TL-INS-E-9",
+      "name": "Placa de Calentamiento Magnética",
+      "details": ["Rango de temperatura: RT a 340 °C", "Superficie: cerámica esmaltada", "Capacidad: hasta 20L", "Velocidad: 60-1500 RPM", "Timer integrado"],
+      "quantity": 2,
+      "unit_price": 1800000
+    }
+  ],
+  "observations": [
+    "Para la fabricación de equipos, requerimos un abono equivalente al 30% del total del equipo, el 70% restante se cancela el día de la entrega/envío. El tiempo de entrega es de 10 días hábiles para equipos sin electrónica (CLS, Autoclaves, Columnas de extracción, cilindros, etc.) y de 20 días hábiles para equipos con electrónica (Hornos de vacío, liofilizadoras, Cabinas de flujo laminar, etc.).",
+    "Los precios ofertados en este documento no incluyen el impuesto I.V.A. (el I.V.A. se calcula automáticamente sobre el subtotal).",
+    "La garantía de todos los equipos es de 12 meses contados a partir de la fecha de entrega, cubriendo defectos de fabricación y materiales.",
+    "Los repuestos y consumibles tienen disponibilidad inmediata en nuestro almacén de Tunja, Boyacá.",
+    "Esta cotización tiene una validez de 30 días calendario a partir de la fecha de emisión."
+  ]
+}
