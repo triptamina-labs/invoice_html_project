@@ -1,58 +1,52 @@
 {
   "client": {
-    "name": "Cliente en General",
-    "nit": "N/A",
-    "code": "N/A"
+    "name": "Cliente de Ejemplo S.A.S.",
+    "nit": "900987654-3",
+    "code": "CLI-001"
   },
   "invoice": {
     "type": "Cotización",
-    "number": "436",
-    "place": "Tunja, Boyacá",
-    "date": "11 de Julio 2025",
-    "expiry_date": "",
-    "seller": "",
-    "conditions": "Transferencia",
-    "reference": "",
-    "delivery": "Envío",
+    "number": "001",
+    "place": "Bogotá, Colombia",
+    "date": "01 de Enero 2026",
+    "expiry_date": "31 de Enero 2026",
+    "seller": "Vendedor Ejemplo",
+    "conditions": "Transferencia bancaria",
+    "reference": "Proyecto ejemplo",
+    "delivery": "Envío terrestre (3-5 días hábiles)",
     "iva": "19",
     "descuento": "10"
   },
   "items": [
     {
-      "code": "TL-INS-E-2-C",
-      "name": "Empaque Unión VITON 6\"",
+      "code": "PROD-001",
+      "name": "Producto de Ejemplo A",
       "details": [
-        "Material: VITON",
-        "Diámetro: 6\"",
-        "Rango temperatura: -26 °C a +222 °C"
+        "Material: Ejemplo",
+        "Especificación: Detalle del producto"
       ],
       "quantity": 2.00,
-      "unit_price": 570000
+      "unit_price": 150000
     },
     {
-      "code": "TL-INS-E-2",
-      "name": "Empaque Unión VITON 1.5\"",
+      "code": "PROD-002",
+      "name": "Producto de Ejemplo B",
       "details": [
-        "Material: VITON",
-        "Diámetro: 1.5\"",
-        "Rango temperatura: -26 °C a +222 °C"
+        "Material: Ejemplo",
+        "Especificación: Detalle del producto"
       ],
       "quantity": 4.00,
-      "unit_price": 10500
+      "unit_price": 85000
     },
     {
-      "code": "TL-INS-E-2-A",
-      "name": "Empaque Unión VITON 3\"",
-      "details": [
-        "Material: VITON",
-        "Diámetro: 3\"",
-        "Rango temperatura: -26 °C a +222 °C"
-      ],
-      "quantity": 2.00,
-      "unit_price": 21000
-    }  ],
-"observations": [
-    "Para la fabricación de equipos, requerimos un abono equivalente al 30% del total del equipo, el 70% restante se cancela el día de la entrega /envío. El tiempo de entrega es de 10 días hábiles para equipos sin electrónica (CLS, Autoclaves, Columnas de extracción, cilindros, etc.) y de 20 días hábiles para equipos con electrónica (Hornos de vacío, liofilizadoras, Cabinas de flujo laminar, etc.",
-    "Los precios ofertados en este documento no incluyen el impuesto I.V.A."
+      "code": "PROD-003",
+      "name": "Producto de Ejemplo C",
+      "quantity": 1.00,
+      "unit_price": 320000
+    }
+  ],
+  "observations": [
+    "Esta es una cotización de ejemplo con fines de demostración.",
+    "Los precios no incluyen IVA salvo que se indique lo contrario."
   ]
 }

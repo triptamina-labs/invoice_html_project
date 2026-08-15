@@ -1,94 +1,96 @@
-# Documentación de la API REST para Generación de Facturas
+# Documentación de la API REST — Generación de Facturas
 
-## Descripción General
+## Descripción
 
-Este sistema expone una API REST para generar facturas en PDF a partir de datos enviados en formato JSON. El PDF se genera usando una plantilla HTML, estilos CSS personalizados y la librería Puppeteer para renderizado.
+API REST para generar facturas en PDF a partir de JSON. Usa **pdfmake** (sin Puppeteer, sin Chromium).
 
 ---
 
 ## Ejecución
 
-1. Instala dependencias:
-   ```bash
-   npm install
-   ```
-2. Inicia la API:
-   ```bash
-   npm run api
-   ```
-   Por defecto escucha en el puerto 3000 (`http://localhost:3000`).
-
----
-
-## 3. Autenticación y Seguridad
-
-El acceso a la API está protegido para prevenir el abuso y garantizar que solo clientes autorizados puedan utilizarla.
-
-### Autenticación por API Key
-
-Toda petición al endpoint `/generate-invoice` debe incluir una API Key válida en la cabecera `x-api-key`.
-
--   **Cabecera requerida:** `x-api-key: TU_API_KEY`
--   La API Key por defecto es `supersecretkey`. Puedes cambiarla configurando la variable de entorno `API_KEY`.
-
-Si la API Key es incorrecta o no se proporciona, la API responderá con un error `401 No autorizado`.
-
-### Rate Limiting
-
-Para evitar sobrecargas, se ha implementado un límite de peticiones. Cada dirección IP puede realizar un máximo de **30 peticiones cada 15 minutos**.
-
-Si se excede este límite, la API responderá con un error `429 Demasiadas peticiones`.
-
----
-
-## 4. Diagrama de Flujo de la Petición
-
-El siguiente diagrama ilustra el flujo de una petición desde el cliente hasta la generación del PDF.
-
-```mermaid
-sequenceDiagram
-    participant Cliente
-    participant API Gateway
-    participant Servidor Express
-    participant Puppeteer
-
-    Cliente->>+API Gateway: POST /generate-invoice (JSON, x-api-key)
-    API Gateway->>API Gateway: Validar Rate Limit y API Key
-    alt Petición Válida
-        API Gateway->>+Servidor Express: Reenvía la petición
-        Servidor Express->>Servidor Express: 1. Valida el JSON (Joi)
-        Servidor Express->>Servidor Express: 2. Procesa datos (cálculos, base64)
-        Servidor Express->>+Puppeteer: 3. Generar PDF con HTML y CSS
-        Puppeteer-->>-Servidor Express: PDF generado
-        Servidor Express-->>-Cliente: 200 OK (application/pdf)
-    else Petición Inválida en Gateway
-        API Gateway-->>-Cliente: 401 No Autorizado / 429 Demasiadas Peticiones
-    end
-    alt Error en Servidor
-        Servidor Express-->>-Cliente: 400 Bad Request / 500 Internal Server Error
-    end
+```bash
+pnpm install
+pnpm run api       # Inicia el servidor en http://localhost:3000
+pnpm run generate  # Genera PDF por CLI con datos de ejemplo
+pnpm run test      # Ejecuta tests (requiere servidor corriendo)
 ```
 
 ---
 
-## 5. Endpoint: Generar Factura
+## Autenticación
+
+### API Key
+Toda petición debe incluir `x-api-key` en los headers. Por defecto: `supersecretkey` (configurable vía `API_KEY`).
+
+### Rate Limiting
+30 peticiones cada 15 minutos por IP. Excede → `429 Demasiadas peticiones`.
+
+---
+
+## Endpoint
 
 ### `POST /generate-invoice`
 
--   **Descripción:** Genera un PDF de una factura o cotización a partir de los datos JSON enviados en el cuerpo de la petición.
--   **Cabeceras:**
-    -   `Content-Type: application/json`
-    -   `x-api-key: TU_API_KEY` (requerida, ver sección de Autenticación)
--   **Cuerpo (Body):** Un objeto JSON con los datos de la factura. Ver la sección "Estructura de Datos".
--   **Respuesta Exitosa:**
-    -   **Código:** `200 OK`
-    -   **Content-Type:** `application/pdf`
-    -   **Cuerpo:** El archivo PDF generado.
+- **Headers:** `Content-Type: application/json`, `x-api-key: <key>`
+- **Body:** JSON con datos de la factura (ver estructura abajo)
+- **Respuesta:** `200 OK` con `application/pdf`
 
-#### Ejemplo de Petición (cURL)
+#### Ejemplo (curl)
 
 ```bash
 curl -X POST http://localhost:3000/generate-invoice \
   -H "Content-Type: application/json" \
   -H "x-api-key: supersecretkey" \
-  --data-binary
+  --data-binary @src/data/invoice.json \
+  --output factura.pdf
+```
+
+---
+
+## Estructura de Datos
+
+```json
+{
+  "client": {
+    "name": "Cliente Ejemplo",
+    "nit": "900123456-7",
+    "code": "C001"
+  },
+  "invoice": {
+    "type": "Cotización",
+    "number": "436",
+    "place": "Tunja, Boyacá",
+    "date": "11 de Julio 2025",
+    "expiry_date": "",
+    "seller": "",
+    "conditions": "Transferencia",
+    "reference": "",
+    "delivery": "Envío",
+    "iva": "19",
+    "descuento": "10"
+  },
+  "items": [
+    {
+      "code": "TL-INS-E-2-C",
+      "name": "Empaque Unión VITON 6\"",
+      "details": ["Material: VITON", "Diámetro: 6\""],
+      "quantity": 2,
+      "unit_price": 570000
+    }
+  ],
+  "observations": ["Observación de ejemplo"]
+}
+```
+
+Los campos `iva` y `descuento` aceptan porcentaje (`19`, `"19%"`) o valor absoluto.
+
+---
+
+## Respuestas de Error
+
+| Código | Descripción |
+|--------|-------------|
+| 400 | Datos de factura inválidos (validación Joi) |
+| 401 | API Key inválida o ausente |
+| 429 | Rate limiting excedido |
+| 500 | Error interno del servidor |

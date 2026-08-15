@@ -1,0 +1,112 @@
+{
+  "client": {
+    "name": "Corporación Industrial de Ejemplo",
+    "nit": "800123456-7",
+    "code": "CIE-0042"
+  },
+  "invoice": {
+    "type": "Cotización",
+    "number": "002",
+    "place": "Bogotá, Colombia",
+    "date": "15 de Enero 2026",
+    "expiry_date": "14 de Febrero 2026",
+    "seller": "Vendedor Ejemplo",
+    "conditions": "Transferencia bancaria — 30% anticipo, 70% contra entrega",
+    "reference": "Proyecto laboratorio de ejemplo",
+    "delivery": "Envío terrestre (3-5 días hábiles)",
+    "iva": "19",
+    "descuento": "5"
+  },
+  "items": [
+    {
+      "code": "EQ-001",
+      "name": "Equipo de Laboratorio A",
+      "details": ["Material: Vidrio borosilicato", "Capacidad: 500mL", "Rango temperatura: -20°C a +500°C"],
+      "quantity": 4,
+      "unit_price": 450000
+    },
+    {
+      "code": "EQ-002",
+      "name": "Equipo de Laboratorio B",
+      "details": ["Capacidad: 20L", "Temperatura máx: 250°C", "Controlador PID digital"],
+      "quantity": 2,
+      "unit_price": 3200000
+    },
+    {
+      "code": "EQ-003",
+      "name": "Equipo de Laboratorio C",
+      "details": ["Capacidad: 50L", "Triple llave de seguridad"],
+      "quantity": 1,
+      "unit_price": 2800000
+    },
+    {
+      "code": "EQ-004",
+      "name": "Equipo de Laboratorio D",
+      "details": ["Filtro HEPA H14", "UV-C esterilización"],
+      "quantity": 2,
+      "unit_price": 5500000
+    },
+    {
+      "code": "EQ-005",
+      "name": "Equipo de Laboratorio E",
+      "details": ["Precisión: 0.1mg", "Calibración interna"],
+      "quantity": 5,
+      "unit_price": 850000
+    },
+    {
+      "code": "EQ-006",
+      "name": "Equipo de Laboratorio F",
+      "details": ["Capacidad: 6L", "Temperatura: -80°C"],
+      "quantity": 1,
+      "unit_price": 18500000
+    },
+    {
+      "code": "EQ-007",
+      "name": "Equipo de Laboratorio G",
+      "details": ["Rotor: 24x1.5mL", "Temperatura: -20°C a 40°C"],
+      "quantity": 1,
+      "unit_price": 7800000
+    },
+    {
+      "code": "EQ-008",
+      "name": "Equipo de Laboratorio H",
+      "quantity": 6,
+      "unit_price": 380000
+    },
+    {
+      "code": "EQ-009",
+      "name": "Equipo de Laboratorio I",
+      "details": ["Electrodo incluido", "Calibración 3 puntos"],
+      "quantity": 3,
+      "unit_price": 950000
+    },
+    {
+      "code": "EQ-010",
+      "name": "Equipo de Laboratorio J",
+      "details": ["Rango 190-1100nm", "Software incluido"],
+      "quantity": 1,
+      "unit_price": 12500000
+    },
+    {
+      "code": "EQ-011",
+      "name": "Equipo de Laboratorio K",
+      "quantity": 2,
+      "unit_price": 1800000
+    },
+    {
+      "code": "EQ-012",
+      "name": "Equipo de Laboratorio L",
+      "details": ["Controlador PID", "Termocupla tipo K"],
+      "quantity": 1,
+      "unit_price": 6500000
+    }
+  ],
+  "observations": [
+    "Para la fabricación de equipos, requerimos un abono equivalente al 30% del total del equipo.",
+    "El tiempo de entrega es de 10 días hábiles para equipos sin electrónica y 20 días hábiles para equipos con electrónica.",
+    "Los precios no incluyen IVA (se calcula automáticamente sobre el subtotal).",
+    "La garantía de todos los equipos es de 12 meses contados desde la fecha de entrega.",
+    "Los repuestos y consumibles tienen disponibilidad inmediata en almacén.",
+    "Esta cotización tiene una validez de 30 días calendario a partir de la fecha de emisión."
+  ]
+}

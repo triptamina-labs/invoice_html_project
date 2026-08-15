@@ -2,9 +2,9 @@
 
 # Generador de Facturas en PDF con Node.js
 
-Este proyecto ofrece una solución robusta y profesional para generar documentos PDF (facturas, cotizaciones, etc.) a partir de datos en formato JSON. Utiliza Node.js, Handlebars para plantillas HTML, CSS para un diseño personalizable y Puppeteer para la conversión a PDF.
+Genera facturas y cotizaciones en PDF a partir de datos JSON. Usa **pdfmake** — sin Puppeteer, sin Chromium, sin dependencias pesadas.
 
-Incluye un script para uso por línea de comandos (CLI) y un servidor con una API REST lista para integrarse con sistemas externos como n8n, Zapier, o cualquier aplicación backend.
+Incluye CLI para uso directo y API REST lista para integrarse con n8n, Zapier, o cualquier backend.
 
 ---
 
@@ -15,16 +15,13 @@ Incluye un script para uso por línea de comandos (CLI) y un servidor con una AP
 ```mermaid
 graph TD
     subgraph Flujo de Trabajo CLI
-        A[Usuario] -- ejecuta --> B(npm run generate);
+        A[Usuario] -- ejecuta --> B(pnpm run generate);
         B -- invoca --> C(generate.js);
-        C -- lee --> D{template.html};
-        C -- lee --> E{invoice.json};
-        C -- lee --> F{styles.css};
-        C -- lee --> G{company.json};
-        C -- procesa y combina --> H[HTML Final];
-        H -- usa --> I(Puppeteer);
-        I -- genera --> J(invoice.pdf);
-        I -- genera --> K(debug.html);
+        C -- lee --> D{invoice.json};
+        C -- lee --> E{company.json};
+        C -- procesa y calcula --> F[Datos adaptados];
+        F -- genera --> G[pdfmake];
+        G -- genera --> H(invoice.pdf);
     end
 ```
 
@@ -34,191 +31,424 @@ graph TD
 sequenceDiagram
     participant Client as Cliente
     participant Server as Servidor Express
-    participant PuppeteerPool as Pool de Puppeteer
 
-    Client->>Server: POST /generate-invoice (con JSON y API Key)
-    Server->>Server: Middleware: Rate Limiting
-    Server->>Server: Middleware: API Key Auth
-    Server->>Server: Middleware: Validación Joi
+    Client->>Server: POST /generate-invoice (JSON + API Key)
+    Server->>Server: Rate Limiting + Auth + Validación Joi
     alt Datos Inválidos
         Server-->>Client: 400 Bad Request
     end
-    Server->>Server: Lee company.json
-    Server->>Server: Combina JSON de la petición con company.json
-    Server->>Server: Llama a generatePdfFromData()
-    Server->>PuppeteerPool: Adquiere instancia de Puppeteer
-    PuppeteerPool-->>Server: Retorna instancia
-    Server->>Server: Genera HTML con Handlebars
-    Server->>Server: Renderiza PDF con Puppeteer
-    Server->>PuppeteerPool: Libera instancia de Puppeteer
-    Server-->>Client: 200 OK (con archivo PDF)
+    Server->>Server: Adaptar datos + Calcular totales
+    Server->>Server: Generar PDF con pdfmake
+    Server-->>Client: 200 OK (application/pdf)
 ```
 
 ---
 
 ## Características Principales
 
-- **Generación Dual**: Funciona tanto por CLI como a través de una API REST.
-- **Plantillas Dinámicas**: Usa Handlebars para inyectar datos en una plantilla HTML.
-- **Diseño Personalizable**: Los estilos se controlan con un archivo CSS externo, facilitando la adaptación a cualquier identidad de marca.
-- **Cálculos Automáticos**: Calcula subtotales, impuestos (IVA) y descuentos en el backend.
-- **Incrustación de Recursos**: Las imágenes (logos) y fuentes personalizadas se incrustan en el PDF en formato Base64, garantizando portabilidad y eliminando dependencias externas.
-- **Encabezado y Pie de Página**: Soporte para encabezados y pies de página que se repiten en cada hoja del PDF.
-- **Modo de Depuración**: Genera un archivo `debug.html` para previsualizar y ajustar el diseño fácilmente en un navegador antes de generar el PDF.
-- **API de Alto Rendimiento**: El servidor utiliza un pool de instancias de Puppeteer para manejar peticiones concurrentes de forma eficiente.
-- **Logging Estructurado**: La API registra logs detallados con `pino` para un monitoreo y depuración sencillos.
-- **Seguridad**: La API incluye autenticación por API Key y limitación de peticiones (rate limiting).
-- **Validación de Datos**: Los datos de entrada de la API son validados usando Joi.
+- **Ligero:** Solo pdfmake (~500KB). Sin Chromium (~400MB).
+- **Generación Dual:** CLI y API REST.
+- **Cálculos Automáticos:** Subtotales, impuestos múltiples (IVA, ICA, etc.), descuentos por item y global.
+- **Total en Letras:** Conversión automática a texto en español.
+- **Logo Incrustado:** Imágenes embebidas en base64, PDF autocontenido.
+- **Multi-página:** La tabla de items fluye entre páginas sin header repetido; el footer lleva número de página en todas y el logo pequeño en la última.
+- **API Segura:** Auth por API Key + rate limiting.
+- **Validación:** Esquemas Joi para datos de entrada.
+- **Docker:** Imagen base `node:20-alpine` (~50MB vs ~800MB antes).
+
+---
 
 ## Requisitos
-- **Node.js**: `v18.0` o superior (requerido por Puppeteer).
-- **Gestor de Paquetes**: `npm` o `pnpm`.
+
+- **Node.js**: v18.0 o superior
+- **Gestor de Paquetes**: pnpm (recomendado) o npm
 
 ---
 
 ## Estructura del Proyecto
 
-La estructura está organizada para separar la lógica, las plantillas, los datos y los archivos de salida.
-
 ```
 invoice_html_project/
+├── generate.js                   # Script CLI
 ├── src/
-│   ├── api/
-│   │   └── server.js             # Servidor Express para la API REST
+│   ├── api/server.js             # Servidor Express (API REST)
 │   ├── assets/
-│   │   ├── fonts/
-│   │   │   └── DanhDa-Bold.ttf   # Fuentes personalizadas
-│   │   ├── logo blanco png.png
-│   │   ├── logo negro.png
-│   │   └── logotipo negro.png
+│   │   ├── fonts/                # DanhDa-Bold (título) + Montserrat (cuerpo)
+│   │   ├── logo.png              # Logo principal (header, página 1)
+│   │   └── logo-small.png        # Logo pequeño (footer, última página)
 │   ├── data/
-│   │   ├── company.json          # Datos globales de la empresa
-│   │   └── invoice.json          # Ejemplo de datos de una factura
-│   ├── templates/
-│   │   ├── template.html         # Plantilla principal de la factura
-│   │   └── styles.css            # Hoja de estilos principal
-│   ├── utils/
-│   │   ├── invoice_schema.js     # Esquema de validación de Joi
-│   │   └── invoice_utils.js      # Lógica de negocio y cálculos
-│   └── output/
-│       ├── invoice.pdf           # PDF generado por defecto
-│       └── debug.html            # Archivo HTML para depuración
-├── generate.js                   # Script principal para la generación CLI
-├── tests/
-│   └── generate-invoice.test.js  # Pruebas para la generación de facturas
-├── package.json
-└── README.md
+│   │   ├── company.json          # Datos de la empresa (NIT, teléfono, etc.)
+│   │   ├── invoice.json          # Ejemplo de factura corta
+│   │   └── factura-large.json    # Ejemplo de factura larga (multi-página)
+│   ├── output/                   # PDFs generados (gitignored)
+│   └── utils/
+│       ├── doc_definition.js     # Builder de docDefinition para pdfmake
+│       ├── invoice_schema.js     # Validación Joi
+│       └── invoice_utils.js      # Lógica de negocio (totales, nº a texto)
+├── tests/                        # Tests uvu (47 en total)
+│   ├── api-invoice.test.js       # Integración API (requiere servidor)
+│   ├── unit-doc_definition.test.js
+│   └── unit-invoice_utils.test.js
+├── Dockerfile
+└── package.json
 ```
+
+---
+
+## Datos de la Empresa
+
+Los datos de la empresa viven en `src/data/company.json`. Este archivo se carga automáticamente por el CLI, la API, y como fallback por `buildDocDefinition()`.
+
+```json
+{
+  "name": "Mi Empresa S.A.S.",
+  "logo": "logo.png",
+  "logo_small": "logo-small.png",
+  "tax_id": "900123456-7",
+  "phone": "57 300 123 4567",
+  "city": "Bogotá, Colombia",
+  "website": "www.miempresa.com"
+}
+```
+
+### Campos de `company.json`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `name` | string | Nombre de la empresa. Aparece como título en el header. |
+| `logo` | string | Archivo de imagen del logo principal (relativo a `src/assets/`). Aparece a la izquierda del header en la primera página. |
+| `logo_small` | string | Archivo de imagen del logo pequeño (relativo a `src/assets/`). Aparece en el footer de la última página junto al número de página. |
+| `tax_id` | string | NIT o identificación tributaria. Aparece en el header. |
+| `phone` | string | Teléfono de contacto. Aparece en el header. |
+| `city` | string | Ciudad y departamento. Aparece en el header. |
+| `website` | string | Sitio web. Aparece en el header. |
+
+### Logos
+
+Los logos se colocan en `src/assets/` y se referencian por nombre en `company.json`:
+
+```
+src/assets/
+├── logo.png              ← logo principal (header)
+├── logo-small.png        ← logo pequeño (footer)
+├── logo negro.png        ← ejemplos existentes
+└── logotipo negro.png
+```
+
+- **Formato recomendado:** PNG con fondo transparente.
+- **Logo principal:** Se escala a 70×90px máximo en el header.
+- **Logo pequeño:** Se escala a 50×50px en el footer.
+- Los logos se embebden en base64 dentro del PDF — no se necesitan archivos externos para abrir el PDF.
+
+---
+
+## Referencia Completa del JSON de Factura
+
+El JSON de factura es lo que se envía al CLI (`--data`) o al API (`POST /generate-invoice`). Todos los campos de la factura van en un solo objeto.
+
+### Ejemplo Completo
+
+```json
+{
+  "client": {
+    "name": "Cliente Ejemplo S.A.S.",
+    "nit": "900987654-3",
+    "code": "CLI-001"
+  },
+  "invoice": {
+    "type": "Cotización",
+    "number": "001",
+    "place": "Bogotá, Colombia",
+    "date": "01 de Enero 2026",
+    "expiry_date": "31 de Enero 2026",
+    "seller": "Vendedor Ejemplo",
+    "conditions": "Transferencia bancaria",
+    "reference": "Proyecto ejemplo",
+    "delivery": "Envío terrestre (3-5 días hábiles)"
+  },
+  "items": [
+    {
+      "code": "PROD-001",
+      "name": "Producto A",
+      "details": ["Material: Acero inoxidable", "Capacidad: 500mL"],
+      "quantity": 2,
+      "unit_price": 150000,
+      "discount_rate": 10,
+      "taxable": true
+    },
+    {
+      "code": "PROD-002",
+      "name": "Producto B (exento)",
+      "quantity": 1,
+      "unit_price": 320000,
+      "taxable": false
+    }
+  ],
+  "taxes": [
+    { "name": "IVA", "rate": 19 },
+    { "name": "ICA", "rate": 0.7 }
+  ],
+  "discount": {
+    "global_rate": 5
+  },
+  "observations": [
+    "Garantía de 12 meses.",
+    "Cotización válida por 30 días."
+  ]
+}
+```
+
+---
+
+### `client` (obligatorio)
+
+Datos del cliente que recibe la factura.
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `name` | string | ✅ | Nombre o razón social del cliente. Aparece en la tabla de datos. |
+| `nit` | string | ✅ | NIT o documento de identidad. Puede ser vacío `""`. |
+| `code` | string | ✅ | Código interno del cliente. Puede ser vacío `""`. |
+
+---
+
+### `invoice` (obligatorio)
+
+Datos de la factura o cotización.
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `type` | string | ✅ | Tipo de documento. Ej: `"Cotización"`, `"Factura"`, `"Nota de venta"`. Aparece en el header. |
+| `number` | string | ✅ | Número del documento. Ej: `"001"`, `"589"`. Aparece en el header. |
+| `place` | string | ✅ | Lugar de expedición. Ej: `"Tunja, Boyacá"`. |
+| `date` | string | ✅ | Fecha de emisión. Ej: `"01 de Enero 2026"`. |
+| `expiry_date` | string | ❌ | Fecha de vencimiento. Ej: `"31 de Enero 2026"`. Vacío = sin vencimiento. |
+| `seller` | string | ❌ | Nombre del vendedor. |
+| `conditions` | string | ❌ | Condiciones de pago. Ej: `"Transferencia bancaria"`. |
+| `reference` | string | ❌ | Referencia del proyecto o pedido. |
+| `delivery` | string | ❌ | Condiciones de entrega. Ej: `"Envío terrestre (3-5 días)"`. |
+
+---
+
+### `items[]` (obligatorio, mínimo 1)
+
+Array de productos/servicios. Cada item genera una fila en la tabla del PDF.
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `code` | string | ✅ | Código del producto. Ej: `"EXT-001"`. |
+| `name` | string | ✅ | Nombre del producto. |
+| `details` | string[] | ❌ | Array de líneas de detalle. Ej: `["Material: Vidrio", "Capacidad: 500mL"]`. Aparecen como texto secundario debajo del nombre. |
+| `quantity` | number | ✅ | Cantidad. Debe ser > 0. |
+| `unit_price` | number | ✅ | Precio unitario en COP. Debe ser ≥ 0. |
+| `discount_rate` | number\|string | ❌ | Descuento individual del item. Porcentaje (1-100) o valor absoluto (>100). Ej: `10` = 10% de descuento. Se calcula **antes** de impuestos. |
+| `taxable` | boolean | ❌ | Si el item paga impuestos. Default: `true`. `false` = exento. (Flag informativo por ahora.) |
+
+---
+
+### `taxes[]` (opcional)
+
+Array de impuestos configurables. Si no se define, se busca el campo legacy `iva`.
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `name` | string | ✅ | Nombre del impuesto. Ej: `"IVA"`, `"ICA"`, `"INC"`. Aparece en los totales. |
+| `rate` | number | ✅ | Tasa en porcentaje (0-100). Ej: `19` = 19%. |
+
+Ejemplo con múltiples impuestos:
+
+```json
+"taxes": [
+  { "name": "IVA", "rate": 19 },
+  { "name": "ICA", "rate": 0.7 },
+  { "name": "INC", "rate": 8 }
+]
+```
+
+**Nota:** Los impuestos se calculan sobre el subtotal **después** de descuentos por item.
+
+---
+
+### `discount` (opcional)
+
+Descuento global aplicado al subtotal. Dos opciones mutuamente excluyentes. Si no se define, se busca el campo legacy `descuento`.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `global_rate` | number (0-100) | Porcentaje del subtotal. Ej: `5` = 5%. |
+| `global_amount` | number (> 0) | Monto fijo en COP. Ej: `500000`. |
+
+**No se pueden usar ambos a la vez** — Joi valida con `oxor`.
+
+---
+
+### `observations[]` (opcional)
+
+Array de strings. Cada string es una observación que aparece al final del PDF.
+
+```json
+"observations": [
+  "Garantía de 12 meses.",
+  "Cotización válida por 30 días."
+]
+```
+
+---
+
+### `company` (opcional — auto-cargado)
+
+Datos de la empresa. **No es necesario incluirlo en el JSON de factura** — se carga automáticamente de `src/data/company.json` por el CLI, la API, y como fallback por `buildDocDefinition()`.
+
+Si se incluye en el JSON, tiene prioridad sobre `company.json`.
+
+Ver [Datos de la Empresa](#datos-de-la-empresa) para los campos.
+
+---
+
+### Campos Legacy (compatibilidad hacia atrás)
+
+Estos campos siguen funcionando para no romper integraciones existentes:
+
+| Campo | Tipo | Reemplazado por |
+|---|---|---|
+| `iva` | number\|string | `taxes[]` |
+| `descuento` | number\|string | `discount.global_rate` / `discount.global_amount` |
+| `invoice.iva` | number\|string | `taxes[]` |
+| `invoice.descuento` | number\|string | `discount` |
+
+**Prioridad:** Si se define `taxes[]`, el campo `iva` se ignora. Si se define `discount`, el campo `descuento` se ignora.
+
+---
+
+## Orden de Cálculo
+
+```
+1. lineTotal    = quantity × unit_price
+2. itemDiscount = lineTotal × discount_rate%
+3. subtotal     = lineTotal - itemDiscount    (por item)
+4. subtotal     = Σ items.subtotal            (global)
+5. taxes        = subtotal × rate%            (cada impuesto, redondeado)
+6. total        = subtotal + Σtaxes - descuento_global
+7. total_text   = conversión automática a texto en español
+```
+
+---
+
+## Validación (API)
+
+La API valida el JSON con Joi antes de generar el PDF. Si hay errores, responde `400` con los detalles:
+
+```json
+{
+  "error": "Datos de factura inválidos",
+  "details": [
+    "\"client.name\" is required",
+    "\"items[0].quantity\" must be a positive number"
+  ]
+}
+```
+
+### Reglas de validación
+
+- `client` es obligatorio con `name`, `nit`, `code`.
+- `invoice` es obligatorio con `type`, `number`, `place`, `date`.
+- `items` es obligatorio, mínimo 1 item.
+- Cada item requiere `code`, `name`, `quantity` (>0), `unit_price` (≥0).
+- `taxes[].rate` debe estar entre 0 y 100.
+- `discount.global_rate` debe estar entre 0 y 100.
+- `discount.global_amount` debe ser ≥ 0.
+- No se pueden usar `global_rate` y `global_amount` juntos.
+- `observations` es opcional (array de strings).
 
 ---
 
 ## Instalación
 
-1. Clona el repositorio o descarga el código.
-2. Instala las dependencias:
-
-   Con `npm`:
-   ```bash
-   npm install
-   ```
-   O con `pnpm`:
-   ```bash
-   pnpm install
-   ```
+```bash
+git clone <repo-url>
+cd invoice_html_project
+pnpm install
+```
 
 ---
 
-## Uso por Línea de Comandos (CLI)
-
-El script `generate.js` permite crear un PDF directamente desde la terminal.
-
-### Comando Básico
-
-Para generar un PDF usando los archivos de configuración por defecto (`src/data/invoice.json`, `src/templates/template.html`, etc.):
+## Uso por CLI
 
 ```bash
-npm run generate
+# Generar con datos por defecto
+pnpm run generate
+
+# Generar con archivos personalizados
+node generate.js --data mi-factura.json --output mi-factura.pdf
+
+# Ejemplo de factura larga (multi-página)
+node generate.js --data src/data/factura-large.json --output factura-larga.pdf
 ```
 
-El archivo `invoice.pdf` se generará en la carpeta `src/output/`.
-
-### Opciones Avanzadas
-
-Puedes especificar rutas personalizadas para los archivos de entrada y salida usando argumentos de línea de comandos:
-
-```bash
-node generate.js --template /ruta/a/mi/plantilla.html --data /ruta/a/mis/datos.json --output /ruta/de/salida/factura.pdf
-```
+El CLI carga `src/data/company.json` automáticamente y lo mergea con los datos de la factura.
 
 ---
 
 ## Uso como API REST
 
-Inicia el servidor:
-
 ```bash
-npm run api
+pnpm run api
 ```
-
-El servidor se ejecutará en `http://localhost:3000`.
 
 ### Endpoint
 
 - **POST** `/generate-invoice`
-- **Body:** JSON de la factura (ver ejemplo en `src/data/invoice.json`).
-- **Headers:**
-    - `Content-Type`: `application/json`
-    - `x-api-key`: `supersecretkey` (o el valor de la variable de entorno `API_KEY`)
-- **Respuesta:** PDF (content-type: `application/pdf`)
+- **Headers:** `Content-Type: application/json`, `x-api-key: <tu-clave>`
+- **Body:** JSON de la factura (ver [Referencia Completa del JSON](#referencia-completa-del-json-de-factura))
+- **Respuesta:** PDF (`application/pdf`)
 
-#### Ejemplo de petición (curl):
 ```bash
 curl -X POST http://localhost:3000/generate-invoice \
   -H "Content-Type: application/json" \
   -H "x-api-key: supersecretkey" \
-  --data-binary @"src/data/invoice.json" \
+  --data-binary @src/data/invoice.json \
   --output factura.pdf
 ```
+
+La API Key por defecto es `supersecretkey` (configurable con `API_KEY`). Rate limit: 30 peticiones cada 15 minutos por IP.
 
 ---
 
 ## Personalización
-- **Plantilla:** Modifica `src/templates/template.html` para cambiar la estructura visual.
-- **Estilos:** Edita `src/templates/styles.css` para personalizar colores, fuentes y tamaños.
-- **Logos:** Cambia los archivos en `src/assets/`.
-- **Fuente:** Usa cualquier fuente TTF en `src/assets/fonts/` y actualiza la regla `@font-face` en el CSS.
-- **Datos de la Empresa:** Modifica `src/data/company.json` para establecer los datos de tu empresa.
+
+- **Logo:** Cambia archivos en `src/assets/` y actualiza `company.json`.
+- **Fuente:** Coloca cualquier `.ttf` en `src/assets/fonts/` y registra en `doc_definition.js` (sección `setupFonts`).
+- **Empresa:** Modifica `src/data/company.json`.
+- **Estilos:** Edita el objeto `styles` y los layouts de tabla en `doc_definition.js`.
 
 ---
 
-## Desarrollo y Depuración
+## Tests
 
-Para facilitar el diseño de la plantilla, el script `generate.js` crea un archivo `debug.html` en la carpeta `src/output/`. Este archivo contiene el HTML renderizado antes de la conversión a PDF, permitiéndote previsualizar los cambios en un navegador.
+```bash
+# Terminal 1: iniciar API (requerido solo para tests de integración)
+pnpm run api
 
----
+# Terminal 2: ejecutar todos los tests (47)
+pnpm run test
 
-## Rendimiento y Logging (API)
-
-### Pool de Puppeteer
-
-El servidor utiliza un pool de instancias de Puppeteer (mediante `generic-pool`) para manejar múltiples peticiones concurrentes de generación de PDF de forma eficiente. Esto evita cuellos de botella y mejora el rendimiento bajo alta demanda.
-
-### Logging estructurado
-
-Se utiliza `pino` para registrar logs estructurados de todas las peticiones, errores y eventos relevantes. Los logs se muestran en la consola y se pueden redirigir a un archivo para su posterior análisis.
+# Solo unit tests (sin servidor)
+npx uvu tests "unit-"
+```
 
 ---
 
-## Solución de Problemas
-- **Puppeteer no instala Chromium:**
-  - Ejecuta `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install puppeteer` y asegúrate de tener Chrome instalado.
-- **El PDF no muestra imágenes o fuentes:**
-  - Verifica que las rutas a los assets en el HTML y CSS sean correctas.
-- **Error de permisos en puertos:**
-  - Cambia el puerto en `src/api/server.js` si el puerto 3000 está ocupado.
+## Docker
+
+```bash
+docker build -t invoice-generator .
+docker run -p 3000:3000 -e API_KEY=tu-clave invoice-generator
+```
 
 ---
 
-## Créditos y Licencia
-- Proyecto desarrollado utilizando Node.js, Handlebars, Puppeteer, Express, y otras librerías de código abierto.
-- Licencia MIT.
+## Créditos
+
+- [pdfmake](http://pdfmake.org) — generación de PDF en JavaScript puro
+- Node.js, Express, Joi, pino
+- Licencia MIT

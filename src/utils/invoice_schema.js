@@ -11,7 +11,7 @@
 // -----------------------------
 // IMPORTACIÓN DE DEPENDENCIAS
 // -----------------------------
-const Joi = require('joi'); // Librería de validación de esquemas
+import Joi from 'joi'; // Librería de validación de esquemas
 
 // -----------------------------
 // ESQUEMA PERSONALIZADO PARA CAMPOS NUMÉRICOS O PORCENTAJE
@@ -46,35 +46,52 @@ const invoiceSchema = Joi.object({
     }).optional(),
 
     client: Joi.object({
-        name: Joi.string().required(), // Nombre del cliente (obligatorio)
-        nit: Joi.string().allow('').required(), // NIT o identificación (puede ser vacío)
-        code: Joi.string().allow('').required() // Código de cliente (puede ser vacío)
+        name: Joi.string().required(),
+        nit: Joi.string().allow('').required(),
+        code: Joi.string().allow('').required()
     }).required(),
 
     invoice: Joi.object({
-        type: Joi.string().required(), // Tipo de factura (ej: "venta")
-        number: Joi.string().required(), // Número de factura
-        place: Joi.string().required(), // Lugar de emisión
-        date: Joi.string().required(), // Fecha de emisión
-        expiry_date: Joi.string().allow(''), // Fecha de vencimiento (opcional)
-        seller: Joi.string().allow(''), // Vendedor (opcional)
-        conditions: Joi.string().allow(''), // Condiciones de pago (opcional)
-        reference: Joi.string().allow(''), // Referencia (opcional)
-        delivery: Joi.string().allow(''), // Entrega (opcional)
-        // Usamos el esquema personalizado para iva y descuento
+        type: Joi.string().required(),
+        number: Joi.string().required(),
+        place: Joi.string().required(),
+        date: Joi.string().required(),
+        expiry_date: Joi.string().allow(''),
+        seller: Joi.string().allow(''),
+        conditions: Joi.string().allow(''),
+        reference: Joi.string().allow(''),
+        delivery: Joi.string().allow(''),
         iva: amountOrPercentSchema.optional(),
         descuento: amountOrPercentSchema.optional()
     }).required(),
 
     items: Joi.array().items(Joi.object({
-        code: Joi.string().required(), // Código del producto/servicio
-        name: Joi.string().required(), // Nombre del producto/servicio
-        details: Joi.array().items(Joi.string()).optional(), // Detalles adicionales (opcional)
-        quantity: Joi.number().positive().required(), // Cantidad (debe ser > 0)
-        unit_price: Joi.number().min(0).required() // Precio unitario (>= 0)
-    })).min(1).required(), // Debe haber al menos un item
+        code: Joi.string().required(),
+        name: Joi.string().required(),
+        details: Joi.array().items(Joi.string()).optional(),
+        quantity: Joi.number().positive().required(),
+        unit_price: Joi.number().min(0).required(),
+        taxable: Joi.boolean().optional().default(true),
+        discount_rate: amountOrPercentSchema.optional()
+    })).min(1).required(),
 
-    observations: Joi.array().items(Joi.string()).optional() // Observaciones adicionales (opcional)
+    // Nuevo: array de impuestos configurables
+    taxes: Joi.array().items(Joi.object({
+        name: Joi.string().required(),   // Ej: "IVA", "ICA", "INC"
+        rate: Joi.number().min(0).max(100).required()  // Porcentaje
+    })).optional(),
+
+    // Nuevo: descuento global configurable
+    discount: Joi.object({
+        global_rate: Joi.number().min(0).max(100).optional(),
+        global_amount: Joi.number().min(0).optional()
+    }).oxor('global_rate', 'global_amount').optional(),
+
+    // Legacy (sigue funcionando)
+    iva: amountOrPercentSchema.optional(),
+    descuento: amountOrPercentSchema.optional(),
+
+    observations: Joi.array().items(Joi.string()).optional()
 });
 
 // -----------------------------
@@ -100,4 +117,4 @@ const validateInvoice = (req, res, next) => {
 // -----------------------------
 // EXPORTACIÓN DEL MIDDLEWARE
 // -----------------------------
-module.exports = { validateInvoice };
+export { validateInvoice };
