@@ -77,6 +77,11 @@ test('adaptInvoiceData: iva en raíz vs invoice', () => {
   assert.is(adaptInvoiceData({ invoice: { iva: '10%' } }).iva, '10%');
 });
 
+test('adaptInvoiceData: descuento en raíz vs invoice', () => {
+  assert.is(adaptInvoiceData({ descuento: 10 }).descuento, 10);
+  assert.is(adaptInvoiceData({ invoice: { descuento: '5%' } }).descuento, '5%');
+});
+
 // =============================
 // calcularTotales
 // =============================
@@ -123,6 +128,24 @@ test('calcularTotales: descuento porcentaje', () => {
   const r = calcularTotales(adaptInvoiceData({
     items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
     descuento: 10,
+  }));
+  assert.is(r.totals.descuento, 10000);
+  assert.is(r.totals.total_numeric, 90000);
+});
+
+test('calcularTotales: descuento porcentaje string "10%"', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    descuento: '10%',
+  }));
+  assert.is(r.totals.descuento, 10000);
+  assert.is(r.totals.total_numeric, 90000);
+});
+
+test('calcularTotales: descuento en invoice (raíz vs invoice)', () => {
+  const r = calcularTotales(adaptInvoiceData({
+    items: [{ code: 'A', name: 'A', quantity: 1, unit_price: 100000 }],
+    invoice: { descuento: '10%' },
   }));
   assert.is(r.totals.descuento, 10000);
   assert.is(r.totals.total_numeric, 90000);
