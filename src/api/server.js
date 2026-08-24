@@ -8,7 +8,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import * as invoiceUtils from '../utils/invoice_utils.js';
 import { generatePdfBuffer } from '../utils/doc_definition.js';
 import { validateInvoice } from '../utils/invoice_schema.js';
@@ -70,6 +70,14 @@ app.post('/generate-invoice', limiter, apiKeyAuth, validateInvoice, async (req, 
 // -----------------------------
 // INICIO
 // -----------------------------
-app.listen(PORT, () => {
-  console.log(`Servidor de facturas escuchando en http://localhost:${PORT}`);
-});
+export { app };
+
+// Solo arranca el listener cuando este archivo se ejecuta directamente
+// (node src/api/server.js o pnpm run api). Cuando se importa (tests),
+// la app queda exportada y quien importa decide puerto y arranque.
+const isEntryPoint = import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isEntryPoint) {
+  app.listen(PORT, () => {
+    console.log(`Servidor de facturas escuchando en http://localhost:${PORT}`);
+  });
+}

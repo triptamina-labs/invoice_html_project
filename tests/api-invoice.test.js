@@ -1,16 +1,33 @@
 // -----------------------------------------------------------------------------
 // TESTS DE INTEGRACIÓN — API REST
 // -----------------------------------------------------------------------------
-// Requiere el servidor corriendo: pnpm run api
-// Ejecutar con: pnpm run test
+// Levanta el servidor él mismo en un puerto efímero (listen(0)); no requiere
+// un proceso externo corriendo. Ejecutar con: pnpm run test
 // -----------------------------------------------------------------------------
 
 import { test } from 'uvu';
 import * as assert from 'uvu/assert';
 import { fetch } from 'undici';
 
-const API_URL = 'http://localhost:3000/generate-invoice';
+const { app } = await import('../src/api/server.js');
 const API_KEY = 'supersecretkey';
+
+let server;
+let API_URL;
+
+test.before(async () => {
+  await new Promise((resolve) => {
+    server = app.listen(0, () => {
+      const { port } = server.address();
+      API_URL = `http://localhost:${port}/generate-invoice`;
+      resolve();
+    });
+  });
+});
+
+test.after(() => {
+  if (server) server.close();
+});
 
 /** Helper: payload mínimo válido */
 function validPayload(overrides = {}) {
